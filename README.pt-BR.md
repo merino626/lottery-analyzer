@@ -11,6 +11,7 @@
 [![Pandas](https://img.shields.io/badge/Pandas-2.x-150458?logo=pandas&logoColor=white)](https://pandas.pydata.org/)
 [![SQLite](https://img.shields.io/badge/SQLite-cache%20local-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![PyInstaller](https://img.shields.io/badge/PyInstaller-.exe%20Windows-3670A0?logo=windows&logoColor=white)](https://pyinstaller.org/)
+[![pywebview](https://img.shields.io/badge/pywebview-janela%20nativa-4B8BBE?logo=windows&logoColor=white)](https://pywebview.flowrl.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 [English](README.md) · **Português (BR)**
@@ -162,6 +163,7 @@ O app abre como uma página Streamlit local com **quatro abas**, todas relativas
 | **Requests** | Conversa com a API pública (não-oficial) de resultados da Caixa, com retry/backoff por cima. |
 | **`concurrent.futures.ThreadPoolExecutor`** (stdlib) | Paraleliza o download dos concursos faltantes — é trabalho de I/O (HTTP), então threads são a ferramenta certa, sem precisar reescrever em async. |
 | **PyInstaller** | Empacota o app mais um pequeno launcher num `.exe` standalone para Windows. |
+| **pywebview** | Embute a interface numa janela nativa de verdade (o WebView2/Edge Chromium do próprio Windows) no build desktop — sem navegador visível, sem console. |
 
 Sem framework web adicional, sem ORM, sem fila de tarefas — um app de análise de dados como esse não precisa disso, e o próprio servidor do Streamlit já é todo o backend.
 
@@ -212,6 +214,10 @@ Todo módulo fala com `storage.py`, nunca com `api.py` e `storage.py` ao mesmo t
 
 **Um código, dois ambientes de execução.** `storage.DB_PATH` resolve de forma diferente dependendo de `sys.frozen`: um `data/resultados.db` normal ao lado do projeto quando rodado com `streamlit run app.py`, ou um `%APPDATA%/LoteriasDaCaixa/resultados.db` persistente quando rodando como o `.exe` empacotado. Essa diferença existe por um motivo concreto: o modo `--onefile` do PyInstaller extrai o app inteiro para uma **pasta temporária apagada quando o processo termina** — sem essa separação, o `.exe` baixaria o cache inteiro do zero silenciosamente a cada execução.
 
+**Uma janela nativa e um servidor em background não cabem na mesma thread principal — então não cabem no mesmo processo.** O build desktop embute a interface numa janela real via `pywebview` (o motor WebView2/Edge Chromium do próprio Windows), e o loop de eventos do pywebview precisa ser dono da thread principal. O bootstrap do próprio Streamlit *também* insiste na thread principal — ele registra um handler de `SIGTERM` ao subir, algo que o Python só permite ali. Rodar o Streamlit numa thread separada levanta `ValueError: signal only works in main thread of the main interpreter`. A solução: `desktop_launcher.py` reexecuta a si mesmo como um **subprocesso** com uma flag oculta; a thread principal do processo pai roda a janela, a thread principal do processo filho roda o Streamlit — cada um ganha a thread principal que exige, porque cada um é um processo diferente.
+
+**Um servidor órfão, resolvido com um Job Object do Windows.** Dividir o app em dois processos cria um problema de limpeza: o que para o subprocesso do Streamlit se o processo da janela for morto diretamente (crash, Gerenciador de Tarefas, um desligamento forçado) em vez de fechado normalmente? Um `finally: processo.terminate()` nunca roda nesse caso — é código Python, e um processo morto não tem chance de rodar sua própria limpeza. A solução real fica um nível abaixo do Python: o processo filho é atribuído a um *Job Object* do Windows criado com `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`, de forma que o próprio kernel do sistema garante que o filho morre no instante em que o handle do pai para aquele job desaparece — inclusive num kill forçado que o pai nunca viu chegar. Verificado matando o processo pai à força no meio de uma sessão e confirmando que o servidor e seus processos auxiliares do WebView2 desaparecem juntos, em vez de ficarem rodando escondidos em segundo plano.
+
 **Latin-1, não UTF-8.** A API da Caixa envia texto acentuado (em português, claro) codificado em latin-1 sem declarar nada confiável nos headers; decodificar como UTF-8 por padrão corrompe todo caractere acentuado nas descrições de prêmio e datas. `api.py` define `resposta.encoding = "latin-1"` explicitamente antes de interpretar o corpo JSON.
 
 **Migração de schema aditiva e idempotente.** `storage._migrar` inspeciona `PRAGMA table_info` e adiciona qualquer uma das três colunas (adicionadas depois do schema original) que estiver faltando, tolerando um arquivo de cache criado por uma versão mais antiga do app em vez de forçar um apagão.
@@ -220,27 +226,33 @@ Todo módulo fala com `storage.py`, nunca com `api.py` e `storage.py` ao mesmo t
 
 ## Executável para Windows
 
-O mesmo código também é distribuído como um `LoteriasDaCaixa.exe` standalone — sem precisar instalar Python para rodar.
+O mesmo código também vira um app desktop de verdade — sem precisar instalar Python, sem terminal, sem precisar achar uma aba de navegador: clica duas vezes em `LoteriasDaCaixa.exe` e abre uma janela de verdade, com o app já rodando dentro dela.
 
 ### Como funciona
 
-[`desktop_launcher.py`](desktop_launcher.py) é o ponto de entrada real que o PyInstaller empacota: ele escolhe uma porta local livre, sobe o próprio CLI do Streamlit **no mesmo processo** (`streamlit.web.cli.main()`, não um subprocesso) apontando para essa porta, e abre o navegador padrão do sistema assim que a porta responde, numa thread separada. De fora, se comporta como um app desktop normal — clica duas vezes, espera um instante, abre uma janela com o app já rodando.
+[`desktop_launcher.py`](desktop_launcher.py) é o ponto de entrada que o PyInstaller empacota. Ao abrir, ele:
+
+1. escolhe uma porta local livre e reexecuta a si mesmo como um **subprocesso**, passando uma flag oculta que diz pra essa cópia só rodar `streamlit run app.py` naquela porta (veja [por que um subprocesso e não uma thread](#decisões-de-engenharia-que-valem-a-pena-destacar) acima);
+2. espera a porta responder, depois abre uma janela nativa de verdade via **`pywebview`** (o motor WebView2/Edge Chromium que já vem com o Windows) apontando direto pra ela — sem barra de endereço, sem moldura de navegador, sem aba separada;
+3. se o WebView2 não estiver disponível por algum motivo, cai de volta para abrir no navegador padrão do sistema em vez de simplesmente falhar;
+4. amarra o subprocesso do Streamlit a um Job Object do Windows, para que ele nunca sobreviva à janela, mesmo se o app for fechado à força.
+
+O resultado se comporta como um app desktop comum: um processo na barra de tarefas, uma janela, nenhum console.
 
 ### Compile você mesmo
 
 ```bash
-pip install -r requirements.txt
-pip install pyinstaller
+pip install -r requirements.txt -r requirements-desktop.txt
 python build_exe.py
 ```
 
-Isso gera `dist/LoteriasDaCaixa.exe` (um arquivo único, ~190 MB — ele empacota um runtime Python completo, Streamlit, Pandas e PyArrow). Nenhum arquivo `.spec` ou pasta `dist`/`build` fica versionado; `build_exe.py` regenera tudo do zero sempre, usando [`assets/icon.ico`](assets/icon.ico) como ícone do executável.
+Isso gera `dist/LoteriasDaCaixa/` — uma **pasta**, não um arquivo único (modo `--onedir` do PyInstaller: abre mais rápido que `--onefile`, e esse app em particular sobe uma segunda cópia de si mesmo como subprocesso a cada execução, o que com onefile significaria extrair o pacote inteiro duas vezes). O `LoteriasDaCaixa.exe` dentro dessa pasta é o que você realmente executa; para compartilhar, zipe a pasta inteira. Nada dentro de `dist/`/`build/` fica versionado — `build_exe.py` regenera tudo do zero sempre, usando [`assets/icon.ico`](assets/icon.ico) como ícone do executável.
 
 > O `.exe` não é assinado digitalmente (certificado de assinatura de código é pago), então o SmartScreen do Windows provavelmente vai mostrar um aviso de **"O Windows protegeu o computador"** na primeira execução. Clique em **Mais informações → Executar assim mesmo**, ou compile você mesmo a partir do código-fonte com os comandos acima para saber exatamente o que tem dentro.
 
 ### O que esperar ao rodar
 
-- A primeira abertura é meio lenta (o `--onefile` extrai tudo para uma pasta temporária antes do Streamlit conseguir subir) — uma janela de console fica aberta mostrando os logs do próprio Streamlit; fechá-la encerra o app.
+- O WebView2 já vem instalado por padrão no Windows 10 (21H2+) e Windows 11, então normalmente isso simplesmente funciona; numa instalação mais antiga ou enxuta sem ele, o app abre no navegador padrão em vez de falhar (ver passo 3 acima).
 - Os dados sincronizados persistem entre execuções em `%APPDATA%\LoteriasDaCaixa\resultados.db` (veja a seção de [arquitetura](#arquitetura) acima para entender por que isso difere do caminho usado em modo desenvolvimento) — apagar essa pasta reseta o cache exatamente como o botão "apagar e ressincronizar" dentro do app.
 
 ---
@@ -250,8 +262,10 @@ Isso gera `dist/LoteriasDaCaixa.exe` (um arquivo único, ~190 MB — ele empacot
 ```
 loterias/
 ├── app.py                    # interface Streamlit — menu lateral + as 4 abas, sem regra de negócio
-├── desktop_launcher.py       # ponto de entrada do .exe empacotado (sobe o Streamlit no processo, abre o navegador)
+├── desktop_launcher.py       # ponto de entrada do .exe (split em subprocesso + janela nativa via pywebview)
 ├── build_exe.py              # build reprodutível via PyInstaller (`python build_exe.py`)
+├── requirements.txt          # para rodar o app: `streamlit run app.py`
+├── requirements-desktop.txt  # dependências extras só pra empacotar o .exe (pyinstaller, pywebview)
 │
 ├── loteria/                  # toda a regra de negócio — importável e testável isoladamente
 │   ├── api.py                 # cliente HTTP da API pública da Caixa: retry/backoff, latin-1, parsing da resposta

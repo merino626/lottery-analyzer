@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 import pandas as pd
 import streamlit as st
 
@@ -10,6 +12,21 @@ from loteria.api import ErroApiCaixa
 from loteria.sync import SincronizacaoParcial
 
 st.set_page_config(page_title="Loterias da Caixa", layout="wide")
+
+if os.environ.get("LOTERIAS_DESKTOP"):
+    # Rodando dentro da janela nativa do .exe: some só com o botão "Deploy" e
+    # o menu "⋮", que não fazem sentido num app desktop. Importante: NÃO
+    # esconder o container inteiro (`stToolbar`) — em algumas versões do
+    # Streamlit ele também hospeda o controle de reabrir o menu lateral
+    # quando colapsado, e escondê-lo travava esse botão para sempre.
+    st.markdown(
+        "<style>"
+        "[data-testid='stAppDeployButton'] {display: none;}"
+        "[data-testid='stMainMenu'] {display: none;}"
+        "</style>",
+        unsafe_allow_html=True,
+    )
+
 st.title("🎲 Loterias da Caixa")
 
 nomes_para_chave = {m.nome: m.chave for m in modalidades.TODAS}

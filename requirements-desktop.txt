@@ -1,0 +1,5 @@
+# Só necessário para empacotar o app como executável desktop (build_exe.py).
+# Não precisa disso para rodar via `streamlit run app.py`.
+pyinstaller>=6.0
+pywebview>=5.0
+pythonnet>=3.0
