@@ -16,6 +16,10 @@
 
 **English** · [Português (BR)](README.pt-BR.md)
 
+### [⬇️ Download for Windows](https://github.com/merino626/lottery-analyzer/releases/download/v1.0.0/LotteryAnalyzer-Setup-1.0.0.zip)
+
+<sub>Version 1.0.0 · Windows 10/11 (x64) · ~185 MB zip · [all releases](https://github.com/merino626/lottery-analyzer/releases/latest)</sub>
+
 </div>
 
 > **New to Brazilian lotteries?** Skip straight to [Loterias da Caixa, for non-Brazilians](#loterias-da-caixa-for-non-brazilians) — the rest of this README will make a lot more sense with that context.
@@ -24,6 +28,7 @@
 
 ## Table of contents
 
+- [Download](#download)
 - [Loterias da Caixa, for non-Brazilians](#loterias-da-caixa-for-non-brazilians)
 - [Screenshots](#screenshots)
 - [Why I built this](#why-i-built-this)
@@ -38,6 +43,21 @@
 - [Disclaimer](#disclaimer)
 - [Roadmap](#roadmap)
 - [License](#license)
+
+---
+
+## Download
+
+| Platform | File | Download |
+|---|---|---|
+| **Windows 10/11 (x64)** | `LotteryAnalyzer-Setup-1.0.0.zip` — ~185 MB | **[⬇️ Direct download](https://github.com/merino626/lottery-analyzer/releases/download/v1.0.0/LotteryAnalyzer-Setup-1.0.0.zip)** |
+| macOS / Linux | Not packaged yet | [Build it yourself](#windows-executable) |
+
+Release notes: **[v1.0.0](https://github.com/merino626/lottery-analyzer/releases/tag/v1.0.0)** · every version: [releases page](https://github.com/merino626/lottery-analyzer/releases/latest)
+
+Unzip it anywhere and run `LoteriasDaCaixa.exe` inside the extracted folder — no installer, no admin rights, nothing written outside `%APPDATA%\LoteriasDaCaixa\` (see [what to expect at runtime](#windows-executable)). It's a plain folder, not a single file, because of how the app packages itself — [explained below](#windows-executable).
+
+> The `.exe` is unsigned (no paid code-signing certificate), so Windows SmartScreen will likely show a **"Windows protected your PC"** warning the first time it runs. Click **More info → Run anyway**, or build it from source yourself with the commands in [Windows executable](#windows-executable) so you know exactly what's in it.
 
 ---
 

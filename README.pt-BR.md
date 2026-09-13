@@ -16,12 +16,17 @@
 
 [English](README.md) · **Português (BR)**
 
+### [⬇️ Baixar para Windows](https://github.com/merino626/lottery-analyzer/releases/download/v1.0.0/LotteryAnalyzer-Setup-1.0.0.zip)
+
+<sub>Versão 1.0.0 · Windows 10/11 (x64) · zip de ~185 MB · [todas as versões](https://github.com/merino626/lottery-analyzer/releases/latest)</sub>
+
 </div>
 
 ---
 
 ## Sumário
 
+- [Download](#download)
 - [Sobre as modalidades suportadas](#sobre-as-modalidades-suportadas)
 - [Screenshots](#screenshots)
 - [Por que eu fiz isso](#por-que-eu-fiz-isso)
@@ -36,6 +41,21 @@
 - [Aviso legal](#aviso-legal)
 - [Roadmap](#roadmap)
 - [Licença](#licença)
+
+---
+
+## Download
+
+| Plataforma | Arquivo | Baixar |
+|---|---|---|
+| **Windows 10/11 (x64)** | `LotteryAnalyzer-Setup-1.0.0.zip` — ~185 MB | **[⬇️ Download direto](https://github.com/merino626/lottery-analyzer/releases/download/v1.0.0/LotteryAnalyzer-Setup-1.0.0.zip)** |
+| macOS / Linux | Ainda não empacotado | [Compile você mesmo](#executável-para-windows) |
+
+Notas da versão: **[v1.0.0](https://github.com/merino626/lottery-analyzer/releases/tag/v1.0.0)** · todas as versões: [página de releases](https://github.com/merino626/lottery-analyzer/releases/latest)
+
+Descompacte em qualquer lugar e rode o `LoteriasDaCaixa.exe` dentro da pasta extraída — sem instalador, sem precisar de permissão de administrador, nada é gravado fora de `%APPDATA%\LoteriasDaCaixa\` (veja [o que esperar ao rodar](#executável-para-windows)). É uma pasta, não um arquivo único, por causa de como o app se empacota — [explicado abaixo](#executável-para-windows).
+
+> O `.exe` não é assinado digitalmente (certificado de assinatura de código é pago), então o SmartScreen do Windows provavelmente vai mostrar um aviso de **"O Windows protegeu o computador"** na primeira execução. Clique em **Mais informações → Executar assim mesmo**, ou compile a partir do código-fonte com os comandos em [Executável para Windows](#executável-para-windows) pra saber exatamente o que tem dentro.
 
 ---
 
