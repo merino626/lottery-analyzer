@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/icon.png" alt="Loterias da Caixa" width="96" />
+<img src="docs/social-preview.png" alt="Loterias da Caixa" width="100%" />
 
-# 🎲 Loterias da Caixa
+# Loterias da Caixa
 
 **Um sistema local de análise, geração e conferência de jogos das loterias da Caixa — API pública, sincronização paralela resiliente, e décadas de "quero saber se eu já teria ganhado" transformadas em dado inspecionável.**
 

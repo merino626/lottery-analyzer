@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/icon.png" alt="Loterias da Caixa" width="96" />
+<img src="docs/social-preview.png" alt="Loterias da Caixa" width="100%" />
 
-# 🎲 Loterias da Caixa
+# Loterias da Caixa
 
 **A local-first analytics, generator and checker for Brazil's national lottery draws — a public API, a resilient parallel sync engine, and a national pastime turned into inspectable data.**
 
