@@ -296,8 +296,8 @@ loterias/
 ### Instalação
 
 ```bash
-git clone https://github.com/merino626/loterias-caixa.git
-cd loterias-caixa
+git clone https://github.com/merino626/lottery-analyzer.git
+cd lottery-analyzer
 pip install -r requirements.txt
 ```
 
